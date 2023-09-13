@@ -72,6 +72,14 @@ pub fn optimize(instructions: &mut Vec<Instruction>) {
             | Instruction::DecrementValue(_)
             | Instruction::IncrementPointer(_)
             | Instruction::DecrementPointer(_) => merge_instructions(instructions, index),
+            _ => (),
+        }
+
+        index += 1;
+    }
+    index = 0;
+    while index < instructions.len() {
+        match instructions[index] {
             Instruction::LoopStart(value) => reset_value(instructions, index, value),
             _ => (),
         }
