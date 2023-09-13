@@ -10,10 +10,10 @@ pub enum Error {
 
 #[derive(PartialEq, Debug)]
 pub enum Instruction {
-    IncrementPointer,
-    DecrementPointer,
-    IncrementValue,
-    DecrementValue,
+    IncrementPointer(usize),
+    DecrementPointer(usize),
+    IncrementValue(u8),
+    DecrementValue(u8),
     Output,
     Input,
     LoopStart(usize),
@@ -23,10 +23,10 @@ pub enum Instruction {
 impl Instruction {
     pub fn from_char(char: char) -> Option<Instruction> {
         match char {
-            '>' => Some(Instruction::IncrementPointer),
-            '<' => Some(Instruction::DecrementPointer),
-            '+' => Some(Instruction::IncrementValue),
-            '-' => Some(Instruction::DecrementValue),
+            '>' => Some(Instruction::IncrementPointer(1)),
+            '<' => Some(Instruction::DecrementPointer(1)),
+            '+' => Some(Instruction::IncrementValue(1)),
+            '-' => Some(Instruction::DecrementValue(1)),
             '.' => Some(Instruction::Output),
             ',' => Some(Instruction::Input),
             '[' => Some(Instruction::LoopStart(0)),
@@ -101,12 +101,12 @@ mod tests {
         let result: Vec<Instruction> = parse("__.+-__><--__,__").unwrap();
         let expected: Vec<Instruction> = vec![
             Instruction::Output,
-            Instruction::IncrementValue,
-            Instruction::DecrementValue,
-            Instruction::IncrementPointer,
-            Instruction::DecrementPointer,
-            Instruction::DecrementValue,
-            Instruction::DecrementValue,
+            Instruction::IncrementValue(1),
+            Instruction::DecrementValue(1),
+            Instruction::IncrementPointer(1),
+            Instruction::DecrementPointer(1),
+            Instruction::DecrementValue(1),
+            Instruction::DecrementValue(1),
             Instruction::Input,
         ];
         assert!(
@@ -122,7 +122,7 @@ mod tests {
         let expected: Vec<Instruction> = vec![
             Instruction::Input,
             Instruction::LoopStart(4),
-            Instruction::DecrementValue,
+            Instruction::DecrementValue(1),
             Instruction::Output,
             Instruction::LoopEnd(1),
         ];
@@ -137,17 +137,17 @@ mod tests {
     fn parse_nested_loops() {
         let result: Vec<Instruction> = parse("__>>_[_--__[_[__+_]_]__+__]__").unwrap();
         let expected: Vec<Instruction> = vec![
-            Instruction::IncrementPointer,
-            Instruction::IncrementPointer,
+            Instruction::IncrementPointer(1),
+            Instruction::IncrementPointer(1),
             Instruction::LoopStart(11),
-            Instruction::DecrementValue,
-            Instruction::DecrementValue,
+            Instruction::DecrementValue(1),
+            Instruction::DecrementValue(1),
             Instruction::LoopStart(9),
             Instruction::LoopStart(8),
-            Instruction::IncrementValue,
+            Instruction::IncrementValue(1),
             Instruction::LoopEnd(6),
             Instruction::LoopEnd(5),
-            Instruction::IncrementValue,
+            Instruction::IncrementValue(1),
             Instruction::LoopEnd(2),
         ];
         assert!(
