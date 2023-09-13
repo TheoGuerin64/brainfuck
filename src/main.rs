@@ -1,5 +1,6 @@
-pub mod interpreter;
-pub mod parser;
+mod interpreter;
+mod optimizer;
+mod parser;
 
 use clap::Parser;
 use std::fs;
@@ -30,10 +31,11 @@ fn main() {
         eprintln!("file reading error: {error}");
         process::exit(1);
     });
-    let instructions = parser::parse(&content).unwrap_or_else(|error| {
+    let mut instructions = parser::parse(&content).unwrap_or_else(|error| {
         eprintln!("parsing error: {error}");
         process::exit(1);
     });
+    optimizer::optimize(&mut instructions);
     if let Err(error) = interpreter::execute(&instructions) {
         eprintln!("execution error: {error}");
         process::exit(1);
