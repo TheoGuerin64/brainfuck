@@ -2,10 +2,10 @@ use thiserror::Error;
 
 #[derive(Error, PartialEq, Debug)]
 pub enum Error {
-    #[error("unclosed loop")]
-    NoLoopEnd,
-    #[error("missing loop start")]
-    NoLoopStart,
+    #[error("unclosed loop at line {0} char {1}")]
+    NoLoopEnd(usize, usize),
+    #[error("missing loop start at line {0} char {1}")]
+    NoLoopStart(usize, usize),
 }
 
 #[derive(PartialEq, Debug)]
@@ -36,32 +36,47 @@ impl Instruction {
     }
 }
 
+struct LoopStartIndex {
+    index: usize,
+    line_index: usize,
+    char_index: usize,
+}
+
 pub fn parse(content: &str) -> Result<Vec<Instruction>, Error> {
     let mut instructions: Vec<Instruction> = Vec::new();
-    let mut loop_stack: Vec<usize> = Vec::new();
-    for char in content.chars() {
-        let Some(mut instruction) = Instruction::from_char(char) else {
-            continue;
-        };
+    let mut loop_stack: Vec<LoopStartIndex> = Vec::new();
+    for (line_index, line) in content.lines().enumerate() {
+        for (char_index, char) in line.chars().enumerate() {
+            let Some(mut instruction) = Instruction::from_char(char) else {
+                continue;
+            };
 
-        match &mut instruction {
-            Instruction::LoopStart(_) => {
-                loop_stack.push(instructions.len());
+            match &mut instruction {
+                Instruction::LoopStart(_) => {
+                    loop_stack.push(LoopStartIndex {
+                        index: instructions.len(),
+                        line_index,
+                        char_index,
+                    });
+                }
+                Instruction::LoopEnd(loop_start) => {
+                    let Some(last) = loop_stack.pop() else {
+                        return Err(Error::NoLoopStart(line_index, char_index));
+                    };
+                    instructions[last.index] = Instruction::LoopStart(instructions.len());
+                    *loop_start = last.index;
+                }
+                _ => (),
             }
-            Instruction::LoopEnd(loop_start) => {
-                let Some(last) = loop_stack.pop() else {
-                    return Err(Error::NoLoopStart);
-                };
-                instructions[last] = Instruction::LoopStart(instructions.len());
-                *loop_start = last;
-            }
-            _ => (),
+
+            instructions.push(instruction);
         }
-
-        instructions.push(instruction);
     }
     if !loop_stack.is_empty() {
-        return Err(Error::NoLoopEnd);
+        return Err(Error::NoLoopEnd(
+            loop_stack[0].line_index,
+            loop_stack[0].char_index,
+        ));
     }
 
     Ok(instructions)
@@ -144,19 +159,27 @@ mod tests {
 
     #[test]
     fn parse_missing_start() {
-        let result = parse("__>>_[_--_[__+_]_]__+__]__");
+        let result = parse("__>>_[_--_[__+_]_]__+__]__+__");
+        let Err(error) = result else {
+            panic!("parsing missing start failed, value was {:?}", result);
+        };
         assert!(
-            result.is_err_and(|e| e == Error::NoLoopStart),
-            "parsing missing start should fail with NoLoopStart"
+            error == Error::NoLoopStart(0, 23),
+            "parsing missing start failed, value was {:?}",
+            error
         );
     }
 
     #[test]
     fn parse_missing_end() {
         let result = parse("__>>_[_--__[_[__+_]_[_]__+__]__");
+        let Err(error) = result else {
+            panic!("parsing missing end failed, value was {:?}", result);
+        };
         assert!(
-            result.is_err_and(|e| e == Error::NoLoopEnd),
-            "parsing missing end should fail with NoLoopEnd"
+            error == Error::NoLoopEnd(0, 5),
+            "parsing missing end failed, value was {:?}",
+            error
         );
     }
 }
