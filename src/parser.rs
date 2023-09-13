@@ -55,13 +55,13 @@ pub fn parse(content: &str) -> Result<Vec<Instruction>, Error> {
                 Instruction::LoopStart(_) => {
                     loop_stack.push(LoopStartIndex {
                         index: instructions.len(),
-                        line_index,
-                        char_index,
+                        line_index: line_index + 1,
+                        char_index: char_index + 1,
                     });
                 }
                 Instruction::LoopEnd(loop_start) => {
                     let Some(last) = loop_stack.pop() else {
-                        return Err(Error::NoLoopStart(line_index, char_index));
+                        return Err(Error::NoLoopStart(line_index + 1, char_index + 1));
                     };
                     instructions[last.index] = Instruction::LoopStart(instructions.len());
                     *loop_start = last.index;
@@ -164,7 +164,7 @@ mod tests {
             panic!("parsing missing start failed, value was {:?}", result);
         };
         assert!(
-            error == Error::NoLoopStart(0, 23),
+            error == Error::NoLoopStart(1, 24),
             "parsing missing start failed, value was {:?}",
             error
         );
@@ -177,7 +177,7 @@ mod tests {
             panic!("parsing missing end failed, value was {:?}", result);
         };
         assert!(
-            error == Error::NoLoopEnd(0, 5),
+            error == Error::NoLoopEnd(1, 6),
             "parsing missing end failed, value was {:?}",
             error
         );
