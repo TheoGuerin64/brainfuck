@@ -43,10 +43,7 @@ fn merge_instructions(instructions: &mut Vec<Instruction>, index: usize) {
         _ => (),
     }
 
-    for _ in 0..count {
-        instructions.remove(index + 1);
-    }
-
+    instructions.drain(index + 1..index + 1 + count);
     advance_loops(instructions, index, count);
 }
 
