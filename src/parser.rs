@@ -18,6 +18,9 @@ pub enum Instruction {
     Input,
     LoopStart(usize),
     LoopEnd(usize),
+
+    // Optimized instructions
+    ResetValue,
 }
 
 impl Instruction {

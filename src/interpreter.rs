@@ -76,6 +76,7 @@ fn execute_instruction(
                 *index = *loop_start;
             }
         }
+        Instruction::ResetValue => memory[*pointer] = Wrapping(0),
     }
     Ok(())
 }

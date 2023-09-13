@@ -4,6 +4,24 @@ fn is_same_instruction(instruction1: &Instruction, instruction2: &Instruction) -
     std::mem::discriminant(instruction1) == std::mem::discriminant(instruction2)
 }
 
+fn advance_loops(instructions: &mut Vec<Instruction>, index: usize, removed_count: usize) {
+    for (instruction_index, instruction) in instructions.iter_mut().enumerate() {
+        match instruction {
+            Instruction::LoopStart(value) => {
+                if index < *value {
+                    *value -= removed_count;
+                }
+            }
+            Instruction::LoopEnd(value) => {
+                if index < *value && index < instruction_index {
+                    *value -= removed_count;
+                }
+            }
+            _ => (),
+        }
+    }
+}
+
 fn merge_instructions(instructions: &mut Vec<Instruction>, index: usize) {
     let mut count: usize = 0;
     while instructions.len() >= index + count + 2
@@ -29,20 +47,23 @@ fn merge_instructions(instructions: &mut Vec<Instruction>, index: usize) {
         instructions.remove(index + 1);
     }
 
-    for (instruction_index, instruction) in instructions.iter_mut().enumerate() {
-        match instruction {
-            Instruction::LoopStart(value) => {
-                if index < *value {
-                    *value -= count;
-                }
+    advance_loops(instructions, index, count);
+}
+
+fn reset_value(instructions: &mut Vec<Instruction>, index: usize, value: usize) {
+    if index + 2 != value {
+        return;
+    }
+
+    match instructions[index + 1] {
+        Instruction::IncrementValue(value) | Instruction::DecrementValue(value) => {
+            if value == 1 {
+                instructions[index] = Instruction::ResetValue;
+                instructions.drain(index + 1..index + 3);
+                advance_loops(instructions, index, 2);
             }
-            Instruction::LoopEnd(value) => {
-                if index < *value && index < instruction_index {
-                    *value -= count;
-                }
-            }
-            _ => (),
         }
+        _ => (),
     }
 }
 
@@ -54,8 +75,10 @@ pub fn optimize(instructions: &mut Vec<Instruction>) {
             | Instruction::DecrementValue(_)
             | Instruction::IncrementPointer(_)
             | Instruction::DecrementPointer(_) => merge_instructions(instructions, index),
+            Instruction::LoopStart(value) => reset_value(instructions, index, value),
             _ => (),
         }
+
         index += 1;
     }
 }
