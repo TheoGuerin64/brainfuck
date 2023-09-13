@@ -62,9 +62,7 @@ fn execute_instruction(
         Instruction::IncrementValue => memory[*pointer] += 1,
         Instruction::DecrementValue => memory[*pointer] -= 1,
         Instruction::Output => print!("{}", memory[*pointer].0 as char),
-        Instruction::Input => {
-            memory[*pointer] = Wrapping(input_ascii());
-        }
+        Instruction::Input => memory[*pointer] = Wrapping(input_ascii()),
         Instruction::LoopStart(loop_end) => {
             if memory[*pointer].0 == 0 {
                 *line = *loop_end;
