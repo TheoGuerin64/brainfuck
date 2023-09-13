@@ -39,3 +39,28 @@ fn main() {
         process::exit(1);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn source_file_extension_valid() {
+        let result = source_file_extension("test.bf");
+        assert!(
+            result.is_ok(),
+            "source file extension failed, value was {:?}",
+            result
+        );
+    }
+
+    #[test]
+    fn source_file_extension_invalid() {
+        let result = source_file_extension("test.txt");
+        assert!(
+            result.is_err(),
+            "source file extension failed, value was {:?}",
+            result
+        );
+    }
+}
