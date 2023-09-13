@@ -1,11 +1,6 @@
-mod interpreter;
-mod optimizer;
-mod parser;
-
+use brainfuck_interpreter;
 use clap::Parser;
-use std::fs;
 use std::path::Path;
-use std::process;
 
 #[derive(Parser, Debug)]
 #[command()]
@@ -26,20 +21,7 @@ fn source_file_extension(s: &str) -> Result<String, String> {
 
 fn main() {
     let args: Args = Args::parse();
-
-    let content = fs::read_to_string(args.file_path).unwrap_or_else(|error| {
-        eprintln!("file reading error: {error}");
-        process::exit(1);
-    });
-    let mut instructions = parser::parse(&content).unwrap_or_else(|error| {
-        eprintln!("parsing error: {error}");
-        process::exit(1);
-    });
-    optimizer::optimize(&mut instructions);
-    if let Err(error) = interpreter::execute(&instructions) {
-        eprintln!("execution error: {error}");
-        process::exit(1);
-    }
+    brainfuck_interpreter::interpret(&args.file_path);
 }
 
 #[cfg(test)]

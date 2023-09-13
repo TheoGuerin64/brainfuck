@@ -1,5 +1,10 @@
-use crate::parser::Instruction;
+mod optimizer;
+mod parser;
+
+use parser::Instruction;
+use std::fs;
 use std::num::Wrapping;
+use std::process;
 use thiserror::Error;
 
 #[derive(Error, PartialEq, Debug)]
@@ -81,7 +86,7 @@ fn execute_instruction(
     Ok(())
 }
 
-pub fn execute(instructions: &Vec<Instruction>) -> Result<(), Error> {
+fn execute(instructions: &Vec<Instruction>) -> Result<(), Error> {
     let mut memory: [Wrapping<u8>; 30_000] = [Wrapping(0); 30_000];
     let mut pointer: usize = 0;
     let mut index: usize = 0;
@@ -91,6 +96,22 @@ pub fn execute(instructions: &Vec<Instruction>) -> Result<(), Error> {
         index += 1;
     }
     Ok(())
+}
+
+pub fn interpret(file_path: &str) {
+    let content = fs::read_to_string(file_path).unwrap_or_else(|error| {
+        eprintln!("file reading error: {error}");
+        process::exit(1);
+    });
+    let mut instructions = parser::parse(&content).unwrap_or_else(|error| {
+        eprintln!("parsing error: {error}");
+        process::exit(1);
+    });
+    optimizer::optimize(&mut instructions);
+    if let Err(error) = execute(&instructions) {
+        eprintln!("execution error: {error}");
+        process::exit(1);
+    }
 }
 
 #[cfg(test)]
