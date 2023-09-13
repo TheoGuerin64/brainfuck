@@ -98,11 +98,11 @@ mod tests {
 
     #[test]
     fn parse_basic() {
-        let result: Vec<Instruction> = parse("__.++__><--__,__").unwrap();
+        let result: Vec<Instruction> = parse("__.+-__><--__,__").unwrap();
         let expected: Vec<Instruction> = vec![
             Instruction::Output,
             Instruction::IncrementValue,
-            Instruction::IncrementValue,
+            Instruction::DecrementValue,
             Instruction::IncrementPointer,
             Instruction::DecrementPointer,
             Instruction::DecrementValue,
