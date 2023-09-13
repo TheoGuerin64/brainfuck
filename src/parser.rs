@@ -69,7 +69,7 @@ pub fn parse(content: &str) -> Result<Vec<Instruction>, Error> {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::{parse, Error, Instruction};
+    use super::*;
 
     #[test]
     fn parse_comments() {
