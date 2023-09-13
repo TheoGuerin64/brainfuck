@@ -8,17 +8,20 @@ pub enum Error {
     OutOfBounds,
 }
 
-fn move_pointer(pointer: &mut usize, increment: bool) -> Result<(), Error> {
+fn move_pointer(pointer: &mut usize, value: usize, increment: bool) -> Result<(), Error> {
     if increment {
-        if *pointer >= 30_000 - 1 {
+        let Some(new_value) = pointer.checked_add(value) else {
+            return Err(Error::OutOfBounds);
+        };
+        if new_value >= 30_000 {
             return Err(Error::OutOfBounds);
         }
-        *pointer += 1;
+        *pointer = new_value;
     } else {
-        if *pointer == 0 {
+        let Some(new_value) = pointer.checked_sub(value) else {
             return Err(Error::OutOfBounds);
-        }
-        *pointer -= 1;
+        };
+        *pointer = new_value;
     }
     Ok(())
 }
@@ -57,10 +60,10 @@ fn execute_instruction(
     instruction: &Instruction,
 ) -> Result<(), Error> {
     match instruction {
-        Instruction::IncrementPointer(_) => move_pointer(pointer, true)?,
-        Instruction::DecrementPointer(_) => move_pointer(pointer, false)?,
-        Instruction::IncrementValue(_) => memory[*pointer] += 1,
-        Instruction::DecrementValue(_) => memory[*pointer] -= 1,
+        Instruction::IncrementPointer(value) => move_pointer(pointer, *value, true)?,
+        Instruction::DecrementPointer(value) => move_pointer(pointer, *value, false)?,
+        Instruction::IncrementValue(value) => memory[*pointer] += *value,
+        Instruction::DecrementValue(value) => memory[*pointer] -= *value,
         Instruction::Output => print!("{}", memory[*pointer].0 as char),
         Instruction::Input => memory[*pointer] = Wrapping(input_ascii()),
         Instruction::LoopStart(loop_end) => {
@@ -87,4 +90,201 @@ pub fn execute(instructions: &Vec<Instruction>) -> Result<(), Error> {
         index += 1;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn execute_increment_value() {
+        let mut memory: [Wrapping<u8>; 30_000] = [Wrapping(0); 30_000];
+        let mut pointer: usize = 0;
+        let mut line: usize = 0;
+
+        let result = execute_instruction(
+            &mut memory,
+            &mut pointer,
+            &mut line,
+            &Instruction::IncrementValue(1),
+        );
+
+        if let Err(error) = result {
+            panic!("increment value failed, value was {:?}", error);
+        }
+        assert!(
+            memory[0] == Wrapping(1),
+            "increment value failed, value was {:?}",
+            memory[0]
+        );
+    }
+
+    #[test]
+    fn execute_increment_value_overflow() {
+        let mut memory: [Wrapping<u8>; 30_000] = [Wrapping(0); 30_000];
+        let mut pointer: usize = 0;
+        let mut line: usize = 0;
+
+        memory[0] = Wrapping(255);
+        let result = execute_instruction(
+            &mut memory,
+            &mut pointer,
+            &mut line,
+            &Instruction::IncrementValue(1),
+        );
+
+        if let Err(error) = result {
+            panic!("increment value overflow failed, value was {:?}", error);
+        }
+        assert!(
+            memory[0] == Wrapping(0),
+            "increment value overflow failed, value was {:?}",
+            memory[0]
+        );
+    }
+
+    #[test]
+    fn execute_decrement_value() {
+        let mut memory: [Wrapping<u8>; 30_000] = [Wrapping(0); 30_000];
+        let mut pointer: usize = 0;
+        let mut line: usize = 0;
+
+        memory[0] = Wrapping(1);
+        let result = execute_instruction(
+            &mut memory,
+            &mut pointer,
+            &mut line,
+            &Instruction::DecrementValue(1),
+        );
+
+        if let Err(error) = result {
+            panic!("decrement value failed, value was {:?}", error);
+        }
+        assert!(
+            memory[0] == Wrapping(0),
+            "decrement value failed, value was {:?}",
+            memory[0]
+        );
+    }
+
+    #[test]
+    fn execute_decrement_value_overflow() {
+        let mut memory: [Wrapping<u8>; 30_000] = [Wrapping(0); 30_000];
+        let mut pointer: usize = 0;
+        let mut line: usize = 0;
+
+        let result = execute_instruction(
+            &mut memory,
+            &mut pointer,
+            &mut line,
+            &Instruction::DecrementValue(1),
+        );
+
+        if let Err(error) = result {
+            panic!("decrement value overflow failed, value was {:?}", error);
+        }
+        assert!(
+            memory[0] == Wrapping(255),
+            "decrement value overflow failed, value was {:?}",
+            memory[0]
+        );
+    }
+
+    #[test]
+    fn execute_increment_pointer() {
+        let mut memory: [Wrapping<u8>; 30_000] = [Wrapping(0); 30_000];
+        let mut pointer: usize = 0;
+        let mut line: usize = 0;
+
+        let result = execute_instruction(
+            &mut memory,
+            &mut pointer,
+            &mut line,
+            &Instruction::IncrementPointer(1),
+        );
+
+        if let Err(error) = result {
+            panic!("increment pointer failed, value was {:?}", error);
+        }
+        assert!(
+            pointer == 1,
+            "increment pointer failed, value was {:?}",
+            pointer
+        );
+    }
+
+    #[test]
+    fn execute_increment_pointer_out_of_bounds() {
+        let mut memory: [Wrapping<u8>; 30_000] = [Wrapping(0); 30_000];
+        let mut pointer: usize = 30_000 - 1;
+        let mut line: usize = 0;
+
+        let result = execute_instruction(
+            &mut memory,
+            &mut pointer,
+            &mut line,
+            &Instruction::IncrementPointer(1),
+        );
+
+        let Err(error) = result else {
+            panic!(
+                "increment pointer out of bounds failed, value was {:?}",
+                result
+            );
+        };
+        assert!(
+            error == Error::OutOfBounds,
+            "increment pointer out of bounds failed, value was {:?}",
+            error
+        );
+    }
+
+    #[test]
+    fn execute_decrement_pointer() {
+        let mut memory: [Wrapping<u8>; 30_000] = [Wrapping(0); 30_000];
+        let mut pointer: usize = 1;
+        let mut line: usize = 0;
+
+        let result = execute_instruction(
+            &mut memory,
+            &mut pointer,
+            &mut line,
+            &Instruction::DecrementPointer(1),
+        );
+
+        if let Err(error) = result {
+            panic!("decrement pointer failed, value was {:?}", error);
+        }
+        assert!(
+            pointer == 0,
+            "decrement pointer failed, value was {:?}",
+            pointer
+        );
+    }
+
+    #[test]
+    fn execute_decrement_pointer_out_of_bounds() {
+        let mut memory: [Wrapping<u8>; 30_000] = [Wrapping(0); 30_000];
+        let mut pointer: usize = 0;
+        let mut line: usize = 0;
+
+        let result = execute_instruction(
+            &mut memory,
+            &mut pointer,
+            &mut line,
+            &Instruction::DecrementPointer(1),
+        );
+
+        let Err(error) = result else {
+            panic!(
+                "decrement pointer out of bounds failed, value was {:?}",
+                result
+            );
+        };
+        assert!(
+            error == Error::OutOfBounds,
+            "decrement pointer out of bounds failed, value was {:?}",
+            error
+        );
+    }
 }

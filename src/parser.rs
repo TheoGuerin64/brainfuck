@@ -8,7 +8,7 @@ pub enum Error {
     NoLoopStart(usize, usize),
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Clone, Debug)]
 pub enum Instruction {
     IncrementPointer(usize),
     DecrementPointer(usize),
