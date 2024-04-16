@@ -7,4 +7,4 @@ Optimized Brainfuck interpreter written in Rust!
  - Run: `cargo run -r -- assets/mandelbrot.bf`
 
 ## Help
-![help](https://github.com/TheoGuerin64/brainfuck/assets/57496441/a650ef22-9374-4dbd-b1f4-c2e64d024075)
+![carbon](https://github.com/TheoGuerin64/brainfuck/assets/57496441/09a05efe-1da1-4746-a6c7-cf37461ecacc)
